@@ -16,8 +16,10 @@ def get_results(url: str, num_parsed: int) -> Tuple[str, int]:
     """
     Queries the API for a json formatted list of functions and their associated function signatures
     """
-    resp = requests.get(url)
-    resp.raise_for_status()
+    status = 0
+    while status != 200:
+        resp = requests.get(url)
+        status = resp.status_code
 
     json_data = resp.json()
     next_url: str = json_data["next"]
@@ -32,8 +34,12 @@ def get_results(url: str, num_parsed: int) -> Tuple[str, int]:
         # owner() and ideal_warn_timed(uint256,uint128)
         if int(hex_sig, 16) not in known_hashes.known_hashes:
             # hex_sig is a 'str', parse it into an 'int'
-            known_hashes.known_hashes[int(hex_sig, 16)] = text_sig
-
+            known_hashes.known_hashes[int(hex_sig, 16)] = [text_sig]
+        else:
+            # we read the content and add current element
+            current = known_hashes.known_hashes[int(hex_sig, 16)]
+            current.append(text_sig)
+            known_hashes.known_hashes[int(hex_sig, 16)] = current
         cur_parsed += 1
 
     num_parsed += cur_parsed
